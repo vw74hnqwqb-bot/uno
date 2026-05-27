@@ -1,0 +1,6 @@
+{
+  "name": "Arduino Pin 11 Controller",
+  "description": "WiFi (ESP-01) 및 Web Serial (USB)을 이용해 아두이노 11번 핀을 제어하고, 실시간 아두이노 코드 가이드와 배포용 HTML 파일을 제공하는 웹앱",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
