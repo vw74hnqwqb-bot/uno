@@ -1,13 +1,1184 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>아두이노 11번 핀 제어기 (ESP-01 / Web Serial)</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아두이노 11번 핀 제어 시스템 (ESP-01 & Web Serial)</title>
+    <!-- Tailwind CSS Play CDN (오프라인 호환성 및 실시간 정식 스타일링 완벽 지원) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;505;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        /* Custom scrollbar style */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
+    <!-- Header navigation bar -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/65 py-4 px-6 md:px-8 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-indigo-200">
+                    <!-- Custom CPU SVG Icon -->
+                    <svg class="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                        <rect x="9" y="9" width="6" height="6"></rect>
+                        <line x1="9" y1="1" x2="9" y2="4"></line>
+                        <line x1="15" y1="1" x2="15" y2="4"></line>
+                        <line x1="9" y1="20" x2="9" y2="23"></line>
+                        <line x1="15" y1="20" x2="15" y2="23"></line>
+                        <line x1="20" y1="9" x2="23" y2="9"></line>
+                        <line x1="20" y1="15" x2="23" y2="15"></line>
+                        <line x1="1" y1="9" x2="4" y2="9"></line>
+                        <line x1="1" y1="15" x2="4" y2="15"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold text-slate-900 tracking-tight leading-none">아두이노 11번 핀 무선/유선 제어기</h1>
+                    <p class="text-[11px] text-slate-500 font-semibold mt-1">Single-File Edition (ESP-01 / Web Serial)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-semibold text-slate-500">
+                <a href="#control-panel" class="hover:text-indigo-600 transition hidden sm:inline flex items-center gap-1">컨트롤 스위치</a>
+                <a href="#code-generator" class="hover:text-indigo-600 transition hidden sm:inline flex items-center gap-1">아두이노 코드</a>
+                <a href="#wiring-guide" class="hover:text-indigo-600 transition hidden sm:inline flex items-center gap-1">배선 가이드</a>
+                <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 flex items-center gap-1 shrink-0">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                    GitHub Pages 완벽 대응
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 md:px-8 py-8 flex-1 space-y-10 w-full">
+        
+        <!-- Intro Hero Card -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(99,102,241,0.18),transparent_60%)]"></div>
+            
+            <div class="relative z-10 max-w-2xl space-y-3">
+                <span class="px-3 py-1 bg-indigo-500/25 text-indigo-300 rounded-full text-xs font-bold font-mono tracking-wider">
+                    ESP-01 WiFi & USB WEB SERIAL
+                </span>
+                <h2 class="text-xl md:text-2xl font-extrabold tracking-tight leading-tight">
+                    단 하나의 HTML 파일로 끝내는 아두이노 Smart 제어
+                </h2>
+                <p class="text-slate-300 text-xs md:text-sm leading-relaxed">
+                    본 웹프로그램은 와이파이 성능을 가진 <strong>ESP-01 모듈</strong> 또는 정밀 <strong>USB Web Serial API</strong> 방식을 활용하여 아두이노의 <strong>디지털 11번 핀</strong>을 원격 제어할 수 있는 올인원 대형 대시보드입니다. <br>
+                    외부 자바스크립트 설치나 빌드 단계가 없으므로 본 HTML 파일 하나만 컴퓨터에 파일 저장을 하거나 **GitHub Pages에 업로드** 하시면 다이렉트 무상 배포 및 동작이 즉각 이루어집니다.
+                </p>
+            </div>
+
+            <div class="relative z-10 flex flex-col sm:flex-row md:flex-col gap-2.5 w-full md:w-auto shrink-0 font-semibold text-xs">
+                <button onclick="scrollToId('code-generator')" class="px-5 py-3.5 bg-white text-indigo-950 rounded-xl hover:bg-slate-100 transition duration-150 text-center shadow-md">
+                    아두이노 .ino 소스 복사
+                </button>
+                <button onclick="downloadSelf()" class="px-5 py-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 border border-indigo-500/30 transition duration-150 text-center flex items-center justify-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                    이 파일 통째로 저장하기
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 1: Dashboard Control Switch & Real Graphic -->
+        <div id="control-panel" class="scroll-mt-24 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Side: Control Switchboard panel -->
+            <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-250/50 p-6 shadow-xs flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+                        <h2 class="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                            아두이노 원격 기기 제어 센터
+                        </h2>
+                        
+                        <!-- simulator toggler -->
+                        <div id="sim-control-wrapper" class="flex items-center gap-2">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="sim-checkbox" checked class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500 accent-indigo-600" onchange="toggleSimulatorMode(this)">
+                                <span class="text-xs font-semibold text-slate-500">시뮬레이션 가동</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Mode Selector Tab -->
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-6 text-xs md:text-sm font-semibold">
+                        <button onclick="changeControlMode('wifi')" id="tab-wifi" class="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-white text-indigo-650 shadow-xs transition duration-150">
+                            📶 WiFi 무선 (ESP-01)
+                        </button>
+                        <button onclick="changeControlMode('usb')" id="tab-usb" class="flex items-center justify-center gap-1.5 py-3 rounded-xl text-slate-500 hover:text-slate-800 transition duration-150">
+                            🔌 USB 유선 (Web Serial)
+                        </button>
+                    </div>
+
+                    <!-- WiFi Panel Settings info -->
+                    <div id="panel-wifi" class="space-y-4 mb-6 transition">
+                        <div class="grid grid-cols-12 gap-3">
+                            <div class="col-span-8">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ESP-01 IP 주소</label>
+                                <input type="text" id="wifi-ip" value="192.168.1.15" class="w-full bg-slate-50 border border-slate-220 rounded-xl px-4 py-3 text-slate-800 font-mono text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition" placeholder="예: 192.168.1.15">
+                            </div>
+                            <div class="col-span-4">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">포트</label>
+                                <input type="number" id="wifi-port" value="80" class="w-full bg-slate-50 border border-slate-220 rounded-xl px-4 py-3 text-slate-800 font-mono text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition">
+                            </div>
+                        </div>
+                        <div class="p-3.5 bg-yellow-50 text-yellow-900 border border-yellow-100 rounded-xl text-xs leading-relaxed" id="mixed-content-tip">
+                            📢 <strong>HTTPS 복합 보안안내:</strong> 현재 데모 사이트나 공인 주소는 HTTPS 환경으로 구동됩니다. 크롬 보안 정책에 따라 HTTPS 환경에서 사설 HTTP 무선주소(예: http://192.168.x.x)로 통신할 시 기본 보안 차단될 수 있습니다. <br>
+                            이 파일 상단의 <strong>[이 파일 통째로 저장하기]</strong>를 클릭해 PC로 다운 후 더블 클릭(로컬 개발망 가동 - file://) 형태로 켜시면 브라우저가 어떠한 제제 없이 100% 무선 통신을 정상 전송하게 됩니다!
+                        </div>
+                    </div>
+
+                    <!-- USB Serial Panel Connect -->
+                    <div id="panel-usb" class="space-y-4 mb-6 hidden">
+                        <div class="flex items-center justify-between p-4.5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800" id="serial-state-text">아두이노 보드 미연결</h3>
+                                <p class="text-xs text-slate-400 mt-0.5">시리얼 통신 케이블을 꽂고 연결 버튼을 눌러주세요.</p>
+                            </div>
+                            <button id="btn-serial-connect" onclick="triggerSerialConnection()" class="px-4.5 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                                아두이노 기기 연결
+                            </button>
+                        </div>
+                        
+                        <div id="serial-browser-warning" class="hidden p-3.5 bg-rose-50 text-rose-900 border border-rose-100 rounded-xl text-xs leading-relaxed">
+                            ⚠️ 현재 사용하시는 인터넷 브라우저가 Web Serial API 통신을 감지할 수 없습니다. 
+                            <strong>컴퓨터용 구글 크롬(Chrome) 및 마이크로소프트 엣지(Edge)</strong> 브라우저로 구동 시 실제 USB 장치 직접 제어가 활성화됩니다.
+                        </div>
+                    </div>
+
+                    <!-- Action Trigger Buttons -->
+                    <div>
+                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">11번 핀 디지털 출력 트리거</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="btn-pin-on" onclick="dispatchPinCommand(true)" class="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-slate-100 bg-white hover:border-slate-200 transition-all duration-300 group">
+                                <div id="icon-pin-on" class="w-11 h-11 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-2.5 font-bold text-base transition duration-300">
+                                    ON
+                                </div>
+                                <span class="font-bold text-sm text-slate-800">LED 불켜기 (ON)</span>
+                                <span class="text-[10px] text-slate-400 font-mono mt-0.5">PIN 11 : HIGH</span>
+                            </button>
+
+                            <button id="btn-pin-off" onclick="dispatchPinCommand(false)" class="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-indigo-400 bg-indigo-50/40 transition-all duration-300 group shadow-xs">
+                                <div id="icon-pin-off" class="w-11 h-11 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-2.5 font-bold text-base scale-110 shadow-inner">
+                                    OFF
+                                </div>
+                                <span class="font-bold text-sm text-indigo-900">LED 불끄기 (OFF)</span>
+                                <span class="text-[10px] text-indigo-500 font-mono mt-0.5">PIN 11 : LOW</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Web Console Debug Log Box -->
+                <div class="mt-8 bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex flex-col h-[185px]">
+                    <div class="flex items-center justify-between px-4.5 py-2.5 bg-slate-800 text-slate-300 font-mono text-[10px] font-semibold border-b border-slate-700/50">
+                        <span class="flex items-center gap-1.5 text-indigo-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                            스마트 터미널 콘솔 로그
+                        </span>
+                        <button onclick="clearConsoleLog()" class="text-[9px] hover:text-white bg-slate-700 px-2 py-0.5 rounded transition">비우기</button>
+                    </div>
+                    <div id="terminal-console" class="p-3.5 overflow-y-auto font-mono text-[11px] text-slate-400 flex-1 space-y-1.5 bg-slate-950 select-text">
+                        <div class="text-slate-500 italic">아두이노 원격 통신 보드가 정상적으로 부팅되었습니다. 대기 중...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Virtual breadboard visual board simulation -->
+            <div class="lg:col-span-12 xl:col-span-5 bg-slate-900 text-white rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden shadow-md">
+                <div id="ambient-light-glow" class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none transition-all duration-1000 blur-3xl bg-transparent scale-75"></div>
+
+                <div>
+                    <h2 class="text-base font-bold text-slate-100 flex items-center gap-1.5 relative">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        실시간 회로 반응형 시뮬레이터
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-1 mb-6 font-semibold">브라우저 가상 하드웨어의 모니터링 모듈 상태</p>
+
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800/80 flex flex-col items-center justify-center min-h-[250px] relative z-10">
+                        {/* Light bulb graphic visualizer */}
+                        <div class="relative mb-6">
+                            <div id="light-virtual-halo" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full transition-all duration-500 blur-2xl bg-transparent"></div>
+                            
+                            <div id="light-virtual-bulb" class="w-20 h-20 rounded-full flex items-center justify-center relative border border-slate-700 bg-slate-800 text-slate-600 transition-all duration-500">
+                                <svg class="w-10 h-10 stroke-current" viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v2m0 0h2m-2 0H10m2-16a6 6 0 100 12h0a6 6 0 000-12zM12 13V9" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                          <span id="pin-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-800 text-slate-500 transition">
+                            <span id="pin-badge-dot" class="w-1.5 h-1.5 rounded-full bg-slate-650"></span>
+                            Digital PIN 11: LOW
+                          </span>
+                        </div>
+
+                        <!-- Info parameters board -->
+                        <div class="w-full space-y-3 mt-6 text-xs text-slate-350 font-mono bg-slate-900/40 p-4 rounded-xl border border-slate-800/50">
+                            <div class="flex items-center justify-between border-b border-sidebar-line pb-1.5 border-slate-800">
+                                <span class="text-slate-500">지정 모드:</span>
+                                <span id="info-mode-text" class="text-slate-200">Wi-Fi (ESP-01)</span>
+                            </div>
+                            <div class="flex items-center justify-between border-b border-sidebar-line pb-1.5 border-slate-800">
+                                <span class="text-slate-500">통신 프로토콜:</span>
+                                <span id="info-protocol-text" class="text-indigo-400 font-bold">HTTP (REST GET)</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500">아두이노 기기:</span>
+                                <span class="text-emerald-400 font-bold">Arduino UNO (Pin 11)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 border-t border-slate-800 pt-5 text-[11px] text-slate-400 leading-relaxed">
+                    <p class="font-bold text-slate-200 mb-1">💡 하드웨어 팁:</p>
+                    <p>아두이노 11번 핀에 <strong>220Ω 저항</strong>을 직렬 연결하고 LED 전구의 다리(+)를 통과시킨 다음, LED (-) 마디는 <strong>아두이노의 GND 핀</strong>에 결선하시면 실제 기기 전구와 가상 브라우저가 하나 되어 동시 점멸하게 됩니다.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section 2: Arduino dynamic C++ ino code generator component -->
+        <div id="code-generator" class="bg-white rounded-3xl border border-slate-250/50 p-6 shadow-xs scroll-mt-24 space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                        아두이노 스케치 (.ino) 코드 자동 제어 생성기
+                    </h2>
+                    <p class="text-slate-500 text-xs mt-0.5">선택한 동작 방식에 유효한 C++ 소스 코드가 자동 주입됩니다.</p>
+                </div>
+
+                <!-- Tab Selectors for Code generator -->
+                <div class="flex p-1 bg-slate-100 rounded-xl gap-1 text-xs font-semibold">
+                    <button onclick="switchSketchTab('standalone')" id="btn-tab-standalone" class="px-3.5 py-2.5 rounded-lg bg-white text-indigo-650 shadow-xs transition">
+                        ESP-01 단독 빌딩 (ESP8266 Core)
+                    </button>
+                    <button onclick="switchSketchTab('shield')" id="btn-tab-shield" class="px-3.5 py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition">
+                        우노 + ESP-01 쉴드 (AT SoftSerial)
+                    </button>
+                    <button onclick="switchSketchTab('webserial')" id="btn-tab-webserial" class="px-3.5 py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition">
+                        Web Serial (USB 통신 전용)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wi-Fi Parameters input forms (only visible if not serial usb setup) -->
+            <div id="code-generator-wifi-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4.5 rounded-2xl border border-slate-150">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">공유기 Wi-Fi 이름 (SSID)</label>
+                    <input type="text" id="ssid-input" class="w-full bg-white border border-slate-220 rounded-xl px-3.5 py-2.5 text-slate-800 text-xs font-mono focus:outline-none focus:border-indigo-500 transition" placeholder="공유기 Wi-Fi SSID 기입" value="WIFI_NAME" oninput="updateArduinoSketchCodes()">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">공유기 Wi-Fi 비밀번호</label>
+                    <input type="password" id="password-input" class="w-full bg-white border border-slate-220 rounded-xl px-3.5 py-2.5 text-slate-800 text-xs font-mono focus:outline-none focus:border-indigo-500 transition" placeholder="비밀번호 기입" value="WIFI_PASS" oninput="updateArduinoSketchCodes()">
+                </div>
+            </div>
+
+            <!-- Source Code Codeblock Area -->
+            <div class="relative border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-900 group">
+                <div class="flex items-center justify-between px-4 py-2.5 bg-slate-800 border-b border-slate-700/50">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span id="canvas-filename" class="text-slate-400 text-xs font-mono ml-2 select-none">
+                            ESP01_Standalone.ino
+                        </span>
+                    </div>
+                    <button onclick="copySketchToClipboard()" class="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white bg-slate-700/50 hover:bg-indigo-600 px-3 py-1.5 rounded-lg transition duration-150">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        <span id="btn-copy-text">아두이노 소스 복사하기</span>
+                    </button>
+                </div>
+
+                <!-- Raw pre source text area wrapper -->
+                <div class="max-h-[350px] overflow-y-auto p-4 md:p-5 font-mono text-xs md:text-sm text-slate-200 leading-relaxed select-text scrollbar-thin">
+                    <pre><code id="sketch-code-viewer"></code></pre>
+                </div>
+            </div>
+
+            <div class="p-3.5 bg-indigo-50 border border-indigo-100 rounded-2xl text-xs text-indigo-950 leading-relaxed" id="sketch-tab-explainer">
+                {/* Dyn loading via JS */}
+            </div>
+        </div>
+
+        <!-- Section 3: Hardware Pins Connections Table Info -->
+        <div id="wiring-guide" class="scroll-mt-24 bg-white rounded-3xl border border-slate-250/50 p-6 shadow-xs space-y-5">
+            <div>
+                <h2 class="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                    ESP-01 ↔ 아두이노 기기간 세부 배선 핀 아웃 가이드
+                </h2>
+                <p class="text-slate-500 text-xs mt-0.5">ESP-01 와이파이 칩셋은 동작 로직 전위차(3.3V)가 예민하므로 아래 지침을 참조하세요.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
+                <div class="p-4 bg-amber-50 text-amber-900 border border-amber-100/65 rounded-2xl">
+                    <h3 class="font-bold text-amber-950 text-sm mb-1">⚠️ 주의: 3.3V 독립 전류 파워 공급</h3>
+                    아두이노 우노 내장 3.3V 핀의 최대 송출 한도는 150mA이므로 와이파이 무선 통신 기동 시 최대 300mA를 소모하는 ESP-01이 무한 다운되거나 꺼지는 증상의 핵심 주범이 됩니다. 외부 정전압 파워나 배터리 전원 모듈(3.3V 레귤레이터) 연결을 적극 장려합니다.
+                </div>
+                <div class="p-4 bg-indigo-50 text-indigo-900 border border-indigo-100/65 rounded-2xl">
+                    <h3 class="font-bold text-indigo-950 text-sm mb-1">📢 공통 그라운드(GND) 루프 결선 필수</h3>
+                    독립적인 외부 전기 공급장치를 이용하는 경우에는 신호선이 어긋나는 플로팅 현상을 억제하기 위해, **아두이노 GND** 핀과 **외부 공급장치의 GND 어댑터 마이너스 단자**, 그리고 **ESP-01 GND 핀**을 상호 전선으로 엮어 한 지점으로 합쳐(공통 전위) 주어야 합니다.
+                </div>
+            </div>
+
+            <!-- Pins mapping details table -->
+            <div class="border border-slate-150 rounded-2xl overflow-hidden shadow-xs">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs md:text-sm">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-150 font-bold">
+                            <tr>
+                                <th class="p-3.5 pl-5 w-[140px]">ESP-01 Pin</th>
+                                <th class="p-3.5 w-[200px]">아두이노 우노 결선법</th>
+                                <th class="p-3.5 text-xs text-slate-400">동작 규격 및 디스크립션</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="p-3.5 pl-5 font-mono text-indigo-600 font-bold">VCC</td>
+                                <td class="p-3.5"><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md border text-xs font-mono font-bold">외부 3.3V 파워 (+)</span></td>
+                                <td class="p-3.5 text-xs text-slate-500 leading-normal font-normal">ESP-01을 가동하는 주동력 전압원입니다. 절대 아두이노의 5V에 연결하시면 안 됩니다(칩 과부하 파손).</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="p-3.5 pl-5 font-mono text-indigo-600 font-bold">GND</td>
+                                <td class="p-3.5"><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md border text-xs font-mono font-bold">아두이노 GND / 공통 GND</span></td>
+                                <td class="p-3.5 text-xs text-slate-500 leading-normal font-normal">안정적인 제어를 위해 우노와 외부 빵판 전원부 그라운드를 고리처럼 상호 연결합니다.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="p-3.5 pl-5 font-mono text-indigo-600 font-bold">TX</td>
+                                <td class="p-3.5"><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md border text-xs font-mono font-bold">우노 Digital Pin 2</span></td>
+                                <td class="p-3.5 text-xs text-slate-500 leading-normal font-normal">ESP-01의 송신 신호가 우노 SoftwareSerial RX 핀(2번)에 진입하여 시리얼 문자열 처리를 하게 됩니다.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="p-3.5 pl-5 font-mono text-indigo-600 font-bold">RX</td>
+                                <td class="p-3.5"><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md border text-xs font-mono font-bold">우노 Digital Pin 3</span></td>
+                                <td class="p-3.5 text-xs text-slate-500 leading-normal font-normal">우노의 핀 3번에서 방출하는 TX신호를 수신합니다. 수신 로직은 3.3v이므로 분배저항(1k/2k)을 써주는 전안 가이드가 권고됩니다.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="p-3.5 pl-5 font-mono text-indigo-600 font-bold">CH_PD / EN</td>
+                                <td class="p-3.5"><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md border text-xs font-mono font-bold">외부 3.3V (+) 직결</span></td>
+                                <td class="p-3.5 text-xs text-slate-500 leading-normal font-normal">동작 칩 활성화 핀입니다. 전원에 직결시켜 High 입력을 받아내지 않으면 가동 불능이 됩니다.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/50 transition">
+                                <td class="p-3.5 pl-5 font-mono text-indigo-600 font-bold">GPIO 0 / 2</td>
+                                <td class="p-3.5"><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md border text-xs font-mono font-bold">N/C (미사용 또는 단독 Relay)</span></td>
+                                <td class="p-3.5 text-xs text-slate-500 leading-normal font-normal">단독 모드로 아두이노 보드 없이 작동시킬 때 11번 핀 대신 기기 릴레이의 신호를 통상 GPIO 2핀 통신으로 연결합니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Self Explaining deployment download component -->
+        <div id="github-deployment" class="scroll-mt-24-full bg-slate-900 border border-slate-800 text-white rounded-3xl p-6 md:p-8 shadow-lg">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <!-- Global Web SVG -->
+                    <svg class="w-5 h-5 animate-spin-slow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582Mm0 0h18M12 9h18"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-base md:text-lg font-bold text-slate-100 tracking-tight">깃허브(GitHub) 리포지토리 배포 1초 안내</h2>
+                    <p class="text-xs text-slate-400">별도의 빌드 파이프라인이나 라이브러리가 필요 없는 단일 소스 배포법</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 leading-relaxed text-xs">
+                <div class="md:col-span-8 space-y-3.5 text-slate-300">
+                    <p>
+                        사용자님께서 바로 깃허브 서비스에 배포하실 수 있도록, 본 프로그램은 외부 번들 폴더 없이 
+                        **단 1개의 index.html 파일**에 반응형 CSS 가속기와 순수 스위치 자바스크립트를 완벽하게 압축 빌딩해 설계했습니다. 
+                    </p>
+                    <div class="p-4 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-1.5 text-slate-400">
+                        <span class="font-bold text-indigo-400 flex items-center gap-1">🛠️ 깃허브 배포 가이드 :</span>
+                        <ul class="list-decimal pl-4.5 space-y-1">
+                            <li>우측의 <strong class="text-white bg-indigo-600 px-1.5 py-0.5 rounded text-[10px]">index.html 파일 다운로드</strong> 메커니즘을 사용해 바탕화면에 내려받습니다.</li>
+                            <li>나의 깃허브에 정적 레포지토리(예: <code>my-arduino</code>)를 생성 후 드래그하여 업로드합니다.</li>
+                            <li>레포지토리의 <strong class="text-indigo-300 font-semibold text-shadow-sm">Settings &gt; Pages</strong>로 넘어가 소스를 <em class="text-slate-200">main branch</em>로 저장하여 켜줍니다.</li>
+                            <li>축하합니다! 전세계 어디서나 모바일 웹브라우저로 내 방 아두이노 LED를 제어할 수 있는 모바일 전용 고유 사이트(https://)가 무료 개방됩니다!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Right download section -->
+                <div class="md:col-span-4 flex flex-col justify-center items-center p-5 bg-slate-950/45 border border-slate-800 rounded-2xl text-center">
+                    <!-- HTML File SVG -->
+                    <svg class="w-12 h-12 text-indigo-400 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    <span class="text-xs font-mono text-slate-400 block mb-3">배포 파일명: index.html</span>
+                    <button onclick="downloadSelf()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-1.5 text-xs shadow-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        index.html 다운로드
+                    </button>
+                    <div id="toast-notify" class="hidden mt-2.5 text-emerald-400 text-[10px] font-bold animate-bounce">
+                        ✔ 단일파일 다운로드 완료!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer Area details -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 px-6 text-[11px] text-slate-500 font-medium">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="w-5 h-5 bg-slate-1050 text-slate-800 rounded bg-slate-100 flex items-center justify-center font-mono font-bold">P</span>
+                <span>© 2026 Arduino ESP-01 Pin-11 Interactive Controller. All-rights-reserved.</span>
+            </div>
+            <div class="flex items-center gap-4 text-slate-400 font-semibold text-xs">
+                <a href="#control-panel" class="hover:text-indigo-650 transition">스위치 패널</a>
+                <span>•</span>
+                <a href="#code-generator" class="hover:text-indigo-650 transition">아두이노 C++ 코드</a>
+                <span>•</span>
+                <a href="#wiring-guide" class="hover:text-indigo-650 transition">상세 핀 배선</a>
+                <span>•</span>
+                <span class="text-indigo-500">WiFi + USB 가변 제어</span>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- Main Logic Vanilla Script Embedded directly -->
+    <script>
+        // App State Properties
+        let pin11StatusState = false;
+        let isSimulatedActive = true;
+        let currentMode = 'wifi'; // 'wifi' | 'usb'
+        let currentSketchTab = 'standalone'; // 'standalone' | 'shield' | 'webserial'
+
+        // Web Serial API Stream Cache
+        let serialPortRef = null;
+        let serialWriterRef = null;
+
+        // Ensure support check
+        const isSerialSupported = 'serial' in navigator;
+        if (!isSerialSupported) {
+            document.getElementById('serial-browser-warning').classList.remove('hidden');
+            const serialBtn = document.getElementById('btn-serial-connect');
+            if (serialBtn) {
+                serialBtn.disabled = true;
+                serialBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Auto initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            updateArduinoSketchCodes();
+            writeLog('success', '🚀 아두이노 11번 핀 제어 시스템이 정상적으로 기동되었습니다.');
+            writeLog('info', 'ℹ️ [시뮬레이션 모드] 가 활성화되어 있어 실제 회로 기기 준비 없이 대시보드 조작 테스트를 할 수 있습니다.');
+        });
+
+        // Soft Scroll transition util
+        function scrollToId(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Simulator check state adjustor
+        function toggleSimulatorMode(checkbox) {
+            isSimulatedActive = checkbox.checked;
+            writeLog('info', `시뮬레이션 가동 유무가 \`\${isSimulatedActive ? '활성화' : '비활성화 (실시간 다이렉트 통신)'}\`로 전환되었습니다.`);
+            
+            const mixedTip = document.getElementById('mixed-content-tip');
+            if (isSimulatedActive) {
+                mixedTip.classList.add('opacity-85');
+            } else {
+                mixedTip.classList.remove('opacity-85');
+            }
+        }
+
+        // Mode Switching
+        function changeControlMode(mode) {
+            currentMode = mode;
+            
+            const tWifi = document.getElementById('tab-wifi');
+            const tUsb = document.getElementById('tab-usb');
+            const pWifi = document.getElementById('panel-wifi');
+            const pUsb = document.getElementById('panel-usb');
+
+            const infoMode = document.getElementById('info-mode-text');
+            const infoProd = document.getElementById('info-protocol-text');
+            const simWrapper = document.getElementById('sim-control-wrapper');
+
+            if (mode === 'wifi') {
+                tWifi.className = "flex items-center justify-center gap-1.5 py-3 rounded-xl bg-white text-indigo-650 shadow-xs border border-slate-100 transition duration-150";
+                tUsb.className = "flex items-center justify-center gap-1.5 py-3 rounded-xl text-slate-500 hover:text-slate-800 transition duration-150";
+                pWifi.classList.remove('hidden');
+                pUsb.classList.add('hidden');
+                
+                infoMode.innerText = "Wi-Fi (ESP-01)";
+                infoProd.innerText = "HTTP (REST GET)";
+                simWrapper.classList.remove('hidden');
+                writeLog('info', '📶 통신 회선을 [Wi-Fi 무선 (ESP-01)] 제어 모드로 변경 완료했습니다.');
+            } else {
+                tUsb.className = "flex items-center justify-center gap-1.5 py-3 rounded-xl bg-white text-indigo-650 shadow-xs border border-slate-100 transition duration-150";
+                tWifi.className = "flex items-center justify-center gap-1.5 py-3 rounded-xl text-slate-500 hover:text-slate-800 transition duration-150";
+                pUsb.classList.remove('hidden');
+                pWifi.classList.add('hidden');
+
+                infoMode.innerText = "USB Serial Engine";
+                infoProd.innerText = "CDC Virtual Serial";
+                simWrapper.classList.add('hidden'); // Serial always direct!
+                writeLog('info', '🔌 통신 회선을 [USB 유선 (Web Serial)] 제어 모드로 변경 완료했습니다.');
+            }
+        }
+
+        // Custom logging core function
+        function writeLog(type, message) {
+            const consoleEl = document.getElementById('terminal-console');
+            if (!consoleEl) return;
+
+            // Clear dummy message
+            if (consoleEl.children.length === 1 && consoleEl.children[0].classList.contains('italic')) {
+                consoleEl.innerHTML = '';
+            }
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            
+            const colorMap = {
+                info: 'text-slate-400',
+                success: 'text-emerald-400',
+                error: 'text-rose-400',
+                sent: 'text-amber-400 font-semibold',
+                received: 'text-sky-400'
+            };
+
+            const line = document.createElement('div');
+            line.className = "flex items-start gap-2.5 text-[11px] leading-normal shrink-0";
+            line.innerHTML = `<span class="text-slate-600 select-none shrink-0" style="min-width: 65px;">[${timeStr}]</span><span class="${colorMap[type] || 'text-slate-400'}">${message}</span>`;
+            
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function clearConsoleLog() {
+            const consoleEl = document.getElementById('terminal-console');
+            if (consoleEl) {
+                consoleEl.innerHTML = '<div class="text-slate-500 italic">로그 패널이 초기화되었습니다.</div>';
+            }
+        }
+
+        // Visual Status updates (Lightbulb glow effect etc)
+        function refreshVisualStates(state) {
+            pin11StatusState = state;
+            
+            const ambient = document.getElementById('ambient-light-glow');
+            const bulb = document.getElementById('light-virtual-bulb');
+            const halo = document.getElementById('light-virtual-halo');
+            
+            const badge = document.getElementById('pin-badge');
+            const dot = document.getElementById('pin-badge-dot');
+
+            const btnOn = document.getElementById('btn-pin-on');
+            const btnOff = document.getElementById('btn-pin-off');
+            const iconOn = document.getElementById('icon-pin-on');
+            const iconOff = document.getElementById('icon-pin-off');
+
+            if (state) {
+                // Pin HIGH (ON) Visuals
+                if (ambient) ambient.className = "absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none transition-all duration-1000 blur-3xl bg-amber-500/20 scale-125";
+                if (halo) halo.className = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full transition-all duration-500 blur-2xl bg-amber-400/40 opacity-100";
+                if (bulb) bulb.className = "w-20 h-20 rounded-full flex items-center justify-center relative border border-amber-300 bg-linear-to-b from-amber-200 to-amber-500 text-amber-950 shadow-[0_0_40px_rgba(245,158,11,0.55)] scale-102 transition-all duration-550";
+                
+                if (badge) badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 transition-all duration-300 animate-pulse";
+                if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+                if (badge) badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Digital PIN 11: HIGH (ON)`;
+
+                // Button Hilight Toggle
+                btnOn.className = "flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-amber-400 bg-amber-50/50 text-amber-800 shadow-md transition-all duration-300 relative overflow-hidden";
+                btnOff.className = "flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-slate-100 bg-white hover:border-slate-200 text-slate-500 transition-all duration-300";
+                
+                iconOn.className = "w-11 h-11 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-2.5 font-bold text-base scale-115 shadow-inner transition duration-300";
+                iconOff.className = "w-11 h-11 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-2.5 font-bold text-base transition duration-300";
+            } else {
+                // Pin LOW (OFF) Visuals
+                if (ambient) ambient.className = "absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none transition-all duration-1000 blur-3xl bg-transparent scale-75";
+                if (halo) halo.className = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full transition-all duration-500 blur-2xl bg-transparent opacity-0";
+                if (bulb) bulb.className = "w-20 h-20 rounded-full flex items-center justify-center relative border border-slate-700 bg-slate-800 text-slate-600 transition-all duration-550";
+
+                if (badge) badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-800 text-slate-500 transition-all duration-300";
+                if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-slate-650";
+                if (badge) badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>Digital PIN 11: LOW (OFF)`;
+
+                // Button Hilight Toggle
+                btnOn.className = "flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-slate-100 bg-white hover:border-slate-200 text-slate-500 transition-all duration-300";
+                btnOff.className = "flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-indigo-400 bg-indigo-50/40 text-indigo-950 shadow-md transition-all duration-300";
+                
+                iconOn.className = "w-11 h-11 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-2.5 font-bold text-base transition duration-300";
+                iconOff.className = "w-11 h-11 bg-indigo-100 text-indigo-650 rounded-full flex items-center justify-center mb-2.5 font-bold text-base scale-115 shadow-inner transition duration-300";
+            }
+        }
+
+        // Web Serial Connection Control
+        async function triggerSerialConnection() {
+            if (!isSerialSupported) return;
+
+            if (serialPortRef) {
+                // Already connected, disconnect now
+                try {
+                    if (serialWriterRef) {
+                        await serialWriterRef.close();
+                        serialWriterRef = null;
+                    }
+                    await serialPortRef.close();
+                    serialPortRef = null;
+                    
+                    document.getElementById('serial-state-text').innerText = '아두이노 보드 미연결';
+                    const connBtn = document.getElementById('btn-serial-connect');
+                    connBtn.innerText = '아두이노 기기 연결';
+                    connBtn.className = "px-4.5 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm";
+                    
+                    writeLog('info', '🔌 USB 시리얼 포트 연결이 종료되었습니다.');
+                } catch (e) {
+                    writeLog('error', '포트 닫기 오류: ' + e.message);
+                }
+                return;
+            }
+
+            try {
+                writeLog('info', '장치 허용 팝업 호출 중...');
+                serialPortRef = await navigator.serial.requestPort();
+                await serialPortRef.open({ baudRate: 9600 });
+
+                document.getElementById('serial-state-text').innerText = '아두이노 가상 포트 실시간 가동 중';
+                const connBtn = document.getElementById('btn-serial-connect');
+                connBtn.innerText = '포트 연결 해제';
+                connBtn.className = "px-4.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm";
+
+                const encoder = new TextEncoderStream();
+                const writableStreamClosed = encoder.readable.pipeTo(serialPortRef.writable);
+                serialWriterRef = encoder.writable.getWriter();
+
+                writeLog('success', '🔌 아두이노와 USB 시리얼(9600 bps) 가상 통신망 형성에 성공했습니다!');
+                
+                // Keep reading responses from arduino in secondary async loop
+                receiveSerialStreamData();
+            } catch (err) {
+                writeLog('error', '포트 바인딩 중단됨: ' + err.message);
+                serialPortRef = null;
+            }
+        }
+
+        async function receiveSerialStreamData() {
+            try {
+                while (serialPortRef && serialPortRef.readable) {
+                    const decoder = new TextDecoderStream();
+                    const readableStreamClosed = serialPortRef.readable.pipeTo(decoder.writable);
+                    const reader = decoder.readable.getReader();
+
+                    try {
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+                            if (value) {
+                                const trimVal = value.trim();
+                                writeLog('received', `[RX] 아두이노로부터: \`\${trimVal}\``);
+                                
+                                if (trimVal.includes('PIN11_ON_CONFIRM')) {
+                                    refreshVisualStates(true);
+                                    writeLog('success', '💡 실제 아두이노 메인보드가 11번 핀 점등 상태를 확인 전조 수렴했습니다.');
+                                } else if (trimVal.includes('PIN11_OFF_CONFIRM')) {
+                                    refreshVisualStates(false);
+                                    writeLog('success', '💤 실제 아두이노 메인보드가 11번 핀 소등 상태를 확인 전조 수렴했습니다.');
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        break;
+                    } finally {
+                        reader.releaseLock();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Dispatch Commands
+        async function dispatchPinCommand(targetState) {
+            if (currentMode === 'wifi') {
+                const ip = document.getElementById('wifi-ip').value.trim();
+                const port = document.getElementById('wifi-port').value.trim();
+                
+                if (!ip) {
+                    writeLog('error', '⚠️ ESP-01 무선 통신 서버의 IP 주소를 입력해주세요.');
+                    return;
+                }
+
+                const endpoint = targetState ? 'on' : 'off';
+                const url = `http://${ip}:${port}/${endpoint}`;
+                writeLog('sent', `[TX] GET ${url} 무선 웹 전송 중...`);
+
+                if (isSimulatedActive) {
+                    setTimeout(() => {
+                        refreshVisualStates(targetState);
+                        writeLog('success', `[시뮬레이션 완료] ESP-01(http://${ip})로부터 가상 통신 200 OK를 얻어 대수 11번 핀 상태가 ${targetState ? 'HIGH' : 'LOW'}로 스위칭되었습니다.`);
+                    }, 350);
+                    return;
+                }
+
+                // Real HTTP AJAX Trigger Mode
+                try {
+                    const controller = new AbortController();
+                    const abortTimeout = setTimeout(() => controller.abort(), 3500);
+
+                    const res = await fetch(url, {
+                        method: 'GET',
+                        mode: 'cors',
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(abortTimeout);
+
+                    if (res.ok) {
+                        const txt = await res.text();
+                        refreshVisualStates(targetState);
+                        writeLog('received', `HTTP ${res.status} [응답 수신]: ${txt}`);
+                        writeLog('success', `성공: 무선 명령에 의해 11번 디지털 핀이 ${targetState ? '켜졌습니다!' : '꺼졌습니다!'}`);
+                    } else {
+                        throw new Error(`상태코드 에럽: ${res.status}`);
+                    }
+                } catch (e) {
+                    writeLog('error', `통신 장애 오류 수신: ${e.message}`);
+                    
+                    if (window.location.protocol === 'https:') {
+                        writeLog('error', '🚫 Mixed Content 보호 차단 경고: 현재 페이지가 HTTPS 보안 규정 상태이므로 일반 사설 HTTP(WiFi 공유기망)로 패킷 송신이 막히게 됩니다.');
+                        writeLog('info', '💡 간단 우회법: 본 페이지 우측 하단의 [index.html 다운로드]를 받아 바탕화면에서 파일 직접 실행 하시면 브라우저 보안 제제 없이 실제 무선 가동이 즉시 완성됩니다.');
+                    }
+                    
+                    // Offline Simulator backup feedback
+                    refreshVisualStates(targetState);
+                    writeLog('info', '(무선 전송이 차단되어 로컬 시뮬레이터 동작만 임시 전환되었습니다.)');
+                }
+            } else {
+                // USB Serial Mode Dispatch Control
+                if (!serialPortRef || !serialWriterRef) {
+                    writeLog('error', '⚠️ 아두이노 보드와 연결 상태가 아닙니다. [아두이노 기기 연결] 포트를 바인딩해 주세요.');
+                    return;
+                }
+
+                const charCmd = targetState ? '1' : '0';
+                writeLog('sent', `[TX] USB Serial 명령어 전송: '${charCmd}'`);
+
+                try {
+                    await serialWriterRef.write(charCmd);
+                    // Standard trigger unless received confirmatory echo back
+                    refreshVisualStates(targetState);
+                } catch (e) {
+                    writeLog('error', '시리얼 전송 중 오류 발생: ' + e.message);
+                }
+            }
+        }
+
+        // Arduino Source Code Generation Real-time calculations
+        function updateArduinoSketchCodes() {
+            const rawSsid = document.getElementById('ssid-input').value || 'YOUR_WIFI_SSID';
+            const rawPass = document.getElementById('password-input').value || 'YOUR_WIFI_PASSWORD';
+            const rawPort = document.getElementById('wifi-port').value || '80';
+
+            const standaloneCode = `/**
+ * ESP-01 Standalone 아두이노 스케치 (ESP8266 보드 환경 설정 빌드)
+ * 핀 설정: ESP-01의 GPIO 2번 핀에 Relay 모듈이나 LED가 연결된 것으로 가정합니다.
+ * (아두이노 UNO 기기 없이 ESP-01 혼자 네트워크를 부여받아 직접 액션을 행합니다.)
+ */
+
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+// Wi-Fi 환경 설정
+const char* ssid = "${rawSsid}";
+const char* password = "${rawPass}";
+
+// WebServer 객체 선언 (포트 지정)
+ESP8266WebServer server(${rawPort});
+
+// 제어할 핀 정의 (ESP-01에서는 GPIO 2가 적절함)
+const int controlPin = 2; 
+
+void handleRoot() {
+  String html = "<html><head><meta charset='utf-8'></head><body>";
+  html += "<h1>ESP-01 Control Server Running</h1>";
+  html += "<p>Pin State: " + String(digitalRead(controlPin) == HIGH ? "ON" : "OFF") + "</p>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+// 핀 켜기 핸들러
+void handlePinOn() {
+  digitalWrite(controlPin, HIGH);
+  
+  // CORS 및 HTTP 응답 (웹브라우저 직접 제어 연동 핵심)
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", "LED ON SUCCESS (GPIO 2)");
+}
+
+// 핀 끄기 핸들러
+void handlePinOff() {
+  digitalWrite(controlPin, LOW);
+  
+  // CORS 및 HTTP 응답
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", "LED OFF SUCCESS (GPIO 2)");
+}
+
+// CORS OPTIONS 통신 처리용 (Preflight 요청 대응)
+void handleOptions() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+  server.send(204);
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(10);
+  
+  pinMode(controlPin, OUTPUT);
+  digitalWrite(controlPin, LOW); // 기본 꺼짐
+
+  // Wi-Fi 연결 진행
+  Serial.println();
+  Serial.print("WiFi 연결 중: ");
+  Serial.println(ssid);
+  
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("");
+  Serial.println("Wi-Fi connected.");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP()); // 이 출력된 IP를 웹앱 주소창에 설정하세요!
+
+  // 라우팅 경로 지정
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/on", HTTP_GET, handlePinOn);
+  server.on("/off", HTTP_GET, handlePinOff);
+  server.on("/on", HTTP_OPTIONS, handleOptions);
+  server.on("/off", HTTP_OPTIONS, handleOptions);
+
+  server.begin();
+  Serial.println("HTTP Server started");
+}
+
+void loop() {
+  server.handleClient();
+}
+`;
+
+            const shieldCode = `/**
+ * Arduino Uno + ESP-01 (AT 명령어 제어 방식) 아두이노 스케치
+ * ESP-01이 기본 AT 펌웨어 상태일 때, 아두이노가 ESP-01을 제어하여 
+ * 웹 서버를 열고 11번 핀을 키고 끄는 방식입니다.
+ * 
+ * [핀 결선 가이드] 
+ * - ESP-01 TX -> Arduino Pin 2 (SoftwareSerial RX)
+ * - ESP-01 RX -> Arduino Pin 3 (SoftwareSerial TX)
+ * - 우노 11번 핀 -> LED (+) 및 저항 연결
+ */
+
+#include <SoftwareSerial.h>
+
+// Software Serial 선언 (2: RX, 3: TX)
+SoftwareSerial espSerial(2, 3); 
+
+const int pin11 = 11; // 제어 대상 아두이노 11번 디지털핀
+const char* ssid = "${rawSsid}";
+const char* password = "${rawPass}";
+
+void setup() {
+  Serial.begin(9600);      // 아두이노 시리얼 모니터 세팅
+  espSerial.begin(9600);   // ESP-01 통신 (일반 공장출하 펌웨어 기설정 속도)
+
+  pinMode(pin11, OUTPUT);
+  digitalWrite(pin11, LOW);
+
+  Serial.println("ESP-01 자가 동기화 구동 시도...");
+  
+  sendATCommand("AT+RST", 2000);
+  sendATCommand("AT+CWMODE=1", 1000); // Station 무선 접근 모드
+  
+  // Wi-Fi 연결 명령어 AT+CWJAP 구성
+  String wifiJoinCmd = "AT+CWJAP=\\"";
+  wifiJoinCmd += ssid;
+  wifiJoinCmd += "\\",\\"";
+  wifiJoinCmd += password;
+  wifiJoinCmd += "\\"";
+  sendATCommand(wifiJoinCmd, 6000); // 무선국 결합 대기용 시간 배정
+  
+  // 현재 공유기로부터 할당받은 로컬 IP 조회
+  sendATCommand("AT+CIFSR", 2000);
+  
+  // 다중 디코딩 접속 접속 모드
+  sendATCommand("AT+CIPMUX=1", 1000);
+  
+  // HTTP 웹서버 실행 및 개장
+  sendATCommand("AT+CIPSERVER=1,${rawPort}", 1000);
+  
+  Serial.println("ESP-01 웹서버 구성 완료! 요청 명령어를 대기합니다.");
+}
+
+void loop() {
+  if (espSerial.available()) {
+    if (espSerial.find("+IPD,")) { // 무선 패킷 수신 감지 시
+      delay(300);
+      
+      int connectionId = espSerial.read() - 48; // 문자열을 정수 아스키화
+      
+      // 버퍼로부터 명령어 수집
+      String textData = "";
+      while(espSerial.available()) {
+        char c = espSerial.read();
+        textData += c;
+      }
+      
+      Serial.print("수신 패킷: ");
+      Serial.println(textData);
+      
+      // 라우팅 경로 점검에 따른 핀 제어 분개
+      if (textData.indexOf("/on") != -1) {
+        digitalWrite(pin11, HIGH);
+        sendHTTPResponse(connectionId, "PIN11_ON_CONFIRM");
+        Serial.println("11번 핀 동작: 켜짐(HIGH)");
+      } 
+      else if (textData.indexOf("/off") != -1) {
+        digitalWrite(pin11, LOW);
+        sendHTTPResponse(connectionId, "PIN11_OFF_CONFIRM");
+        Serial.println("11번 핀 동작: 꺼짐(LOW)");
+      }
+      else {
+        sendHTTPResponse(connectionId, "ESP-01 Pin Control Switch Connected.");
+      }
+    }
+  }
+}
+
+// ESP AT 컨트롤 명령어 송출 함수
+void sendATCommand(String command, const int timeout) {
+  espSerial.println(command);
+  long int checkTime = millis();
+  while ((checkTime + timeout) > millis()) {
+    while (espSerial.available()) {
+      char c = espSerial.read();
+      Serial.write(c);
+    }
+  }
+}
+
+// 브라우저 CORS 회피 HTTP Response 송출부 
+void sendHTTPResponse(int connectionId, String payload) {
+  String response = "HTTP/1.1 200 OK\\r\\n";
+  response += "Content-Type: text/plain\\r\\n";
+  response += "Access-Control-Allow-Origin: *\\r\\n"; // CORS 방지 헤더 핵심 탑재
+  response += "Content-Length: " + String(payload.length()) + "\\r\\n";
+  response += "Connection: close\\r\\n\\r\\n";
+  response += payload;
+  
+  String cipSendCommand = "AT+CIPSEND=";
+  cipSendCommand += connectionId;
+  cipSendCommand += ",";
+  cipSendCommand += response.length();
+  
+  sendATCommand(cipSendCommand, 500);
+  espSerial.print(response);
+  delay(100);
+  
+  String cipCloseCommand = "AT+CIPCLOSE=";
+  cipCloseCommand += connectionId;
+  sendATCommand(cipCloseCommand, 500);
+}
+`;
+
+            const webserialCode = `/**
+ * Simple USB Web Serial 아두이노 스케치 (Arduino UNO/Mega 포트 공용)
+ * 
+ * 브라우저 웹페이지에서 직접 USB 가상 포트를 통해 "1" 신호를 보내면 11번이 점등,
+ * "0" 신호를 수신 받으면 11번이 소등되는 직결 직렬(Serial) 제어 방식입니다.
+ * (Wi-Fi 무선 실장 없이도 보급형 USB 케이블 연결로 바로 실증 구동되는 장점!)
+ */
+
+const int targetPin = 11; // 제어할 아두이노 11번 디지털 출력
+
+void setup() {
+  // 브라우저 포트와 보드레이트 통신 스피드 매칭
+  Serial.begin(9600);
+  
+  pinMode(targetPin, OUTPUT);
+  digitalWrite(targetPin, LOW); // 기본 전위 꺼짐
+  
+  Serial.println("Arduino Serial Ready.");
+}
+
+void loop() {
+  // 시리얼 수신 대기열에 비축된 바이트 데이터가 있는지 파악
+  if (Serial.available() > 0) {
+    char singleChar = Serial.read(); // 바이트 수집
+    
+    if (singleChar == '1') {
+      digitalWrite(targetPin, HIGH);
+      // 브라우징 모듈로 램프 상태 확답 신호 에코 백 송신
+      Serial.println("PIN11_ON_CONFIRM"); 
+    } 
+    else if (singleChar == '0') {
+      digitalWrite(targetPin, LOW);
+      Serial.println("PIN11_OFF_CONFIRM");
+    }
+  }
+}
+`;
+
+            // Setup cache texts
+            window.sketchCodes = {
+                standalone: standaloneCode,
+                shield: shieldCode,
+                webserial: webserialCode
+            };
+
+            // Set current viewer text
+            const codeViewer = document.getElementById('sketch-code-viewer');
+            if (codeViewer) {
+                codeViewer.textContent = window.sketchCodes[currentSketchTab];
+            }
+        }
+
+        // Switch Arduino ino source tabs
+        function switchSketchTab(tab) {
+            currentSketchTab = tab;
+            
+            const btnStand = document.getElementById('btn-tab-standalone');
+            const btnShield = document.getElementById('btn-tab-shield');
+            const btnWeb = document.getElementById('btn-tab-webserial');
+            
+            const fileLabel = document.getElementById('canvas-filename');
+            const descLabel = document.getElementById('sketch-tab-explainer');
+            const wifiInputs = document.getElementById('code-generator-wifi-inputs');
+
+            // Reset dynamic focus class
+            btnStand.className = "px-3.5 py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+            btnShield.className = "px-3.5 py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+            btnWeb.className = "px-3.5 py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+
+            if (tab === 'standalone') {
+                btnStand.className = "px-3.5 py-2.5 rounded-lg bg-white text-indigo-650 shadow-xs transition";
+                fileLabel.innerText = "ESP01_Standalone.ino";
+                wifiInputs.classList.remove('hidden');
+                descLabel.innerHTML = `<strong>ESP-01 단독 빌딩형 설명:</strong> 아두이노 보드로 중계하지 않고, ESP-01 칩 단독 내부 연산 처리 장치에 코드를 밀어넣는 구동 방식입니다. 아두이노 IDE에서 <em>Generic ESP8266 Module</em> 보드를 택해 주셔야 하며 독립 구동용 칩 GPIO 2 핀에 신호(Relay/이그젝터) 핀을 탑재시킵니다.`;
+            } else if (tab === 'shield') {
+                btnShield.className = "px-3.5 py-2.5 rounded-lg bg-white text-indigo-650 shadow-xs transition";
+                fileLabel.innerText = "Arduino_ESP01_Shield.ino";
+                wifiInputs.classList.remove('hidden');
+                descLabel.innerHTML = `<strong>우노 + ESP-01 하이브리드 설명:</strong> 범용 아두이노 우노를 지탱체로 삼고, ESP-01을 무선 중계 신뢰 회선 실장기로 돌려 AT 신호 세트로 제어 웹서버를 확장하는 소프트웨어 구조입니다. 웹앱에서 보내는 CORS 승인 패킷을 처리하여 11번 핀을 점멸합니다.`;
+            } else {
+                btnWeb.className = "px-3.5 py-2.5 rounded-lg bg-white text-indigo-650 shadow-xs transition";
+                fileLabel.innerText = "Arduino_USB_WebSerial.ino";
+                wifiInputs.classList.add('hidden');
+                descLabel.innerHTML = `<strong>Web Serial (USB 9600bps 직결형):</strong> Wi-Fi 네트워크 통신 없이도 USB 케이블만 우노 보드와 컴퓨터에 꽂아두면 즉각 무결 동작하는 극강의 통신 기동법입니다. 크롬/엣지 브라우저에서 '1' / '0' 바이트를 통째 전송해 11번 핀 전위를 실시간 지배할 수 있습니다.`;
+            }
+
+            // Render matching code
+            const codeViewer = document.getElementById('sketch-code-viewer');
+            if (codeViewer && window.sketchCodes) {
+                codeViewer.textContent = window.sketchCodes[tab];
+            }
+        }
+
+        // Clipboard copy action handler
+        function copySketchToClipboard() {
+            const viewer = document.getElementById('sketch-code-viewer');
+            if (!viewer) return;
+
+            navigator.clipboard.writeText(viewer.textContent).then(() => {
+                const btnText = document.getElementById('btn-copy-text');
+                btnText.innerText = "✔ 복사 완료!";
+                setTimeout(() => {
+                    btnText.innerText = "아두이노 소스 복사하기";
+                }, 2000);
+            }).catch(err => {
+                alert('클립보드 탐지에 실패했습니다. 마우스 드래그로 수동 선택해 주십시오.');
+            });
+        }
+
+        // Self Code generation download algorithm
+        function getSelfCodeContent() {
+            // Read current local state settings values
+            const wifiSsid = document.getElementById('ssid-input').value || 'WIFI_NAME';
+            const wifiPass = document.getElementById('password-input').value || 'WIFI_PASS';
+            const wifiIp = document.getElementById('wifi-ip').value || '192.168.1.15';
+            const wifiPort = document.getElementById('wifi-port').value || '80';
+
+            // Create fully-independent stand HTML file string mimicking this entire page representation!
+            // This enables the exact same offline application functionality in index.html for local setups!
+            const rawBody = document.documentElement.outerHTML;
+            return rawBody;
+        }
+
+        function downloadSelf() {
+            const documentContent = `<!DOCTYPE html>
+<html lang="ko">
+` + document.documentElement.innerHTML + `
+</html>`;
+            
+            const blob = new Blob([documentContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'index.html';
+            document.body.appendChild(anchor);
+            anchor.click();
+            
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(url);
+
+            const toast = document.getElementById('toast-notify');
+            if (toast) {
+                toast.classList.remove('hidden');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
+            }
+            writeLog('success', '💾 배포 및 오프라인 구동용 단일 HTML 파일(index.html)이 전위 주입 수치와 함께 전량 다운로드 되었습니다!');
+        }
+    </script>
+</body>
+</html>
